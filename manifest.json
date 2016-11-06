@@ -1,0 +1,26 @@
+{
+  "manifest_version": 2,
+  "name": "Kanbanflow pomodoro indicator",
+  "description": "",
+  "version": "0.1",
+  "background": {
+    "scripts": [
+      "background.js"
+    ],
+    "persistent": true
+  },
+  "browser_action": {
+    "default_icon": "icons/icon48.png"
+  },
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "<all_urls>"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://kanbanflow.com/*"],
+      "js": ["jquery-3.1.1.min.js", "content.js"]
+    }
+  ]
+}
