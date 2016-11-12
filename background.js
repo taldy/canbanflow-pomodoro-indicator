@@ -4,6 +4,8 @@
   const CANVAS_SIZE = 48;
 
   let lastTime;
+  let cancelTimer;
+  let cancelTimeout = 10000;
 
   function activateKFTab() {
     chrome.tabs.query({url: URL_PATTERN}, tabs => {
@@ -13,45 +15,12 @@
     });
   }
 
-
-
-  chrome.browserAction.onClicked.addListener(activateKFTab);
-
-  ///// Event handlers /////
-
-  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-
-    const eventMap = {
-      timerTick: onTimerTick
-    };
-
-    if (request.action && eventMap[request.action]) {
-      eventMap[request.action](request, sender, sendResponse);
-    }
-
-    return true;
-  });
-
-  function onTimerTick(request, sender, sendResponse) {
-    console.log('onTimerTick', request.initial, request.current);
-
-    if (stringToSeconds(request.current) === 0) {
-      setDefaultIcon();
-      lastTime = null;
-    }
-    else if (request.current !== lastTime) {
-      drawIcon(request.initial, request.current);
-      lastTime = request.current;
-    }
-  }
-
-
   function _drawProgress(context, value, alarm) {
-    context.beginPath();
-    context.arc(CANVAS_SIZE/2,CANVAS_SIZE/2,CANVAS_SIZE/2-2, -0.5*Math.PI, 1.5*Math.PI);
-    context.strokeStyle = '#ddd';
-    context.lineWidth = 2;
-    context.stroke();
+    //context.beginPath();
+    //context.arc(CANVAS_SIZE/2,CANVAS_SIZE/2,CANVAS_SIZE/2-2, -0.5*Math.PI, 1.5*Math.PI);
+    //context.strokeStyle = '#ddd';
+    //context.lineWidth = 2;
+    //context.stroke();
 
     context.beginPath();
     context.arc(CANVAS_SIZE/2,CANVAS_SIZE/2,CANVAS_SIZE/2-2, -0.5*Math.PI, (2 * value - 0.5)*Math.PI);
@@ -84,50 +53,69 @@
     return canvas.getContext("2d");
   }
 
-  function stringToSeconds(time) {
-    let [mins, secs] = time.split(':');
-    mins = parseInt(mins, 10);
-    secs = parseInt(secs, 10);
-
-    return mins * 60 + secs;
-  }
-
-  function drawIcon(initial, current) {
-
-    let initialSeconds = stringToSeconds(initial);
-    let currentSeconds = stringToSeconds(current);
-    let alarm = currentSeconds <= 60;
-
-    let context = _getCanvasContext();
-
-    _drawProgress(context, currentSeconds / initialSeconds, alarm);
-    _drawTime(context, currentSeconds > 60 ? Math.floor(currentSeconds / 60) : currentSeconds, alarm);
-
-    _updateExtensionIcon(context);
-  }
-
   function setDefaultIcon() {
     chrome.browserAction.setIcon({
-      path: "icons/icon48.png"
+      path: "icons/icon64_grey.png"
     });
   }
 
-  //var i = 61;
-  //drawIcon('00:60', '00:' + i);
-  //
-  //var www = setInterval(() => {
-  //  i--;
-  //  drawIcon('00:60', '00:' + i);
-  //
-  //  if (i <= 0) {
-  //    clearInterval(www);
-  //    www = null;
-  //
-  //    setDefaultIcon();
-  //
-  //    return;
-  //  }
-  //
-  //}, 1000);
+  chrome.browserAction.onClicked.addListener(activateKFTab);
+
+  ///// Event handlers /////
+
+  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+
+    const eventMap = {
+      pomodoroTick: onPomodoroTick,
+      stopwatchTick: onStopwatchTick,
+      cancel: onCancel
+    };
+
+    if (request.action && eventMap[request.action]) {
+      eventMap[request.action](request, sender, sendResponse);
+    }
+
+    return true;
+  });
+
+  function onPomodoroTick(request) {
+    let {left, total} = request;
+
+    let absLeft = Math.abs(left);
+    let uniqValue = absLeft > 60 ? Math.floor(absLeft / 10) : absLeft;
+
+    if (uniqValue !== lastTime) {
+      let alarm = left <= 60;
+
+      let context = _getCanvasContext();
+      _drawProgress(context, left > 0 ? left / total : 1, alarm);
+      _drawTime(context, absLeft > 60 ? Math.floor(absLeft / 60) : absLeft, alarm);
+      _updateExtensionIcon(context);
+
+      lastTime = uniqValue;
+    }
+
+    clearTimeout(cancelTimer);
+    cancelTimer = setTimeout(onCancel, cancelTimeout);
+  }
+
+  function onStopwatchTick(request) {
+    let {current} = request;
+
+    let value = current >= 60 ? Math.floor(current / 60) : current;
+
+    if (value !== lastTime) {
+      let context = _getCanvasContext();
+      _drawProgress(context, 1);
+      _drawTime(context, value);
+      _updateExtensionIcon(context);
+
+      lastTime = value;
+    }
+  }
+
+  function onCancel() {
+    setDefaultIcon();
+  }
 
 })();

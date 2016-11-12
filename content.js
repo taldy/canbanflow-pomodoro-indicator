@@ -3,6 +3,8 @@
   var initialTime;
   var timerInterval;
 
+  var totalTime, startTime;
+
   activate();
 
   ////////////////
@@ -13,18 +15,21 @@
   }
 
   function registerPomodoroHandlers() {
-
-    //document.querySelector('.workTimerDialog-startButton').addEventListener();
-    jQuery('body').on('click', '.workTimerDialog-startButton', onTimerStart);
-
+    jQuery('body')
+      .on('click', '.workTimerDialog-startButton', onTimerStart)
+      .on('click', '.workTimerDialog-buttons-stacked .workTimerDialog-button', onTimerStart);
   }
-  
+
   function onTimerStart(event) {
     console.log('onPomodoroStart', event);
 
-    initialTime = getTimerClockText();
-
-    //onTimerTick();
+    //initialTime = getTimerClockText();
+    //setTimeout(onTimerTick, 1);
+    let timerData = getTimerData();
+    totalTime = getTotalTime(timerData);
+    console.log('totalTime', totalTime);
+    startTime = getStartTime(timerData);
+    console.log('startTime', startTime);
 
     setTimeout(onTimerTick, 1);
   }
@@ -36,35 +41,87 @@
   function onTimerTick() {
 
     if (!isStarted()) {
-      //clearInterval(timerInterval);
-      //timerInterval = null;
-      //onTimerEnd();
-
-      if (initialTime) {
-        synchronise('00:00', initialTime);
-      }
+      cancel();
       return;
     }
 
-    synchronise(getTimerClockText(), initialTime);
-    setTimeout(onTimerTick, 700);
+    if (isNaN(totalTime)) {
+      synchroniseStopwatch(getCurrentTime());
+    }
+    else {
+      synchronisePomodoro(getLeftTime(), totalTime);
+    }
+
+    setTimeout(onTimerTick, 1000);
+  }
+
+  function getTimerPrefix() {
+    return '74f8c84159e0c0e3c274141ab887405b:dbf891a7cea312e5a3a363b650c94823';
+  }
+
+  function getTimerData() {
+    let data = false;
+    try {
+      data = JSON.parse(localStorage[getTimerPrefix() + 'WorkTimerSession:WorkEntry']);
+    }
+    catch (e) {}
+
+    console.log('getTimerData', Object.assign({}, data));
+    return data;
+  }
+
+  function getTotalTime(timerData) {
+    return timerData ? timerData.workEntryDoc.targetWorkTimeMinutes * 60 : 0;
+  }
+
+  function getStartTime(timerData) {
+    return timerData ? new Date(timerData.workEntryDoc.startTimestampLocal).getTime()/1000 : 0;
+  }
+
+  function getCurrentTime() {
+    let current = localStorage[getTimerPrefix() + 'WorkTimerDialog:LastWorkUpdateTime'] / 1000;
+    return Math.floor(current - startTime);
+  }
+
+  function getLeftTime() {
+    return totalTime - getCurrentTime();
+  }
+
+  function getClockElement() {
+    let mainClock = jQuery('#workTimerDialog:visible .workTimerDialog-clockText');
+    let smallClock = jQuery('.toolbar-timerButton-hasClockText .toolbar-button-text');
+
+    return mainClock.length ? mainClock : smallClock;
   }
 
   function getTimerClockText() {
-    return jQuery('.workTimerDialog-clockText').text();
+    return getClockElement().text();
   }
 
   function isStarted() {
-    return !!jQuery('#workTimerDialog:visible .workTimerDialog-stopButton:visible').length;
+    return !!localStorage[getTimerPrefix() + 'WorkTimerSession:WorkEntry'];
   }
 
   function isActive() {
     return !!jQuery('#workTimerDialog:visible').length;
   }
 
-  function synchronise(current, initial) {
-    console.log('synchronise', current, initial);
-    chrome.extension.sendMessage({action: 'timerTick', current, initial}, () => {});
+  function synchronisePomodoro(left, total) {
+    console.log('synchronisePomodoro', left, total);
+    chrome.extension.sendMessage({action: 'pomodoroTick', left, total}, () => {});
   }
+
+  function synchroniseStopwatch(current) {
+    console.log('synchroniseStopwatch', current);
+    chrome.extension.sendMessage({action: 'stopwatchTick', current}, () => {});
+  }
+
+  function cancel() {
+    console.log('cancel');
+    chrome.extension.sendMessage({action: 'cancel'}, () => {});
+  }
+
+  //
+  // .toolbar-timerButton-hasClockText .toolbar-button-text
 
 })();
