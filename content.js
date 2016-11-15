@@ -2,6 +2,7 @@
 
   var initialTime;
   var timerInterval;
+  var timer;
 
   var totalTime, startTime;
 
@@ -19,33 +20,72 @@
       .on('click', '.workTimerDialog-buttons-stacked .workTimerDialog-button', onTimerStart);
   }
 
-  function onTimerStart(event) {
+  function onTimerStart() {
+    setTimeout(startTimer, 10);
+  }
+
+  function startTimer() {
+    if (!isStarted()) {
+      sendCancel();
+      return;
+    }
+
     let timerData = getTimerData();
     totalTime = getTotalTime(timerData);
     startTime = getStartTime(timerData);
 
-    setTimeout(onTimerTick, 1);
-  }
-
-  function onTimerTick() {
-
-    if (!isStarted()) {
-      cancel();
-      return;
-    }
-
     if (isNaN(totalTime)) {
-      synchroniseStopwatch(getCurrentTime());
+      sendStopwatchStart(getCurrentTime());
     }
     else {
-      synchronisePomodoro(getLeftTime(), totalTime);
+      sendPomodoroStart(getLeftTime(), totalTime);
     }
 
-    setTimeout(onTimerTick, 1000);
+    timer = Timer({
+      delay: 1000,
+      onTick: () => {
+        if (!isStarted()) {
+          sendCancel();
+          timer.stop();
+        }
+      }
+    });
+    timer.start();
   }
 
+  //function onTimerStart(event) {
+  //  let timerData = getTimerData();
+  //  totalTime = getTotalTime(timerData);
+  //  startTime = getStartTime(timerData);
+  //
+  //  setTimeout(onTimerTick, 1);
+  //}
+  //
+  //function onTimerTick() {
+  //
+  //  if (!isStarted()) {
+  //    cancel();
+  //    return;
+  //  }
+  //
+  //  if (isNaN(totalTime)) {
+  //    synchroniseStopwatch(getCurrentTime());
+  //  }
+  //  else {
+  //    synchronisePomodoro(getLeftTime(), totalTime);
+  //  }
+  //
+  //  setTimeout(onTimerTick, 1000);
+  //}
+
   function getTimerPrefix() {
-    return '74f8c84159e0c0e3c274141ab887405b:dbf891a7cea312e5a3a363b650c94823';
+    let boardId = location.pathname.split('/board/')[1];
+
+    let key = Object.keys(localStorage)
+      .filter(key => key.indexOf(boardId + 'WorkTimerDialog:LastWorkUpdateTime') > 0)[0]
+      .split(boardId + 'WorkTimerDialog:LastWorkUpdateTime')[0] + boardId;
+
+    return key;
   }
 
   function getTimerData() {
@@ -87,8 +127,16 @@
     chrome.extension.sendMessage({action: 'stopwatchTick', current}, () => {});
   }
 
-  function cancel() {
+  function sendCancel() {
     chrome.extension.sendMessage({action: 'cancel'}, () => {});
+  }
+
+  function sendPomodoroStart(left, total) {
+    chrome.extension.sendMessage({action: 'pomodoroStart', left, total}, () => {});
+  }
+
+  function sendStopwatchStart(current) {
+    chrome.extension.sendMessage({action: 'stopwatchStart', current}, () => {});
   }
 
 })();

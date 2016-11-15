@@ -5,6 +5,7 @@
   "version": "0.1",
   "background": {
     "scripts": [
+      "timer.js",
       "background.js"
     ],
     "persistent": true
@@ -20,7 +21,7 @@
   "content_scripts": [
     {
       "matches": ["https://kanbanflow.com/*"],
-      "js": ["jquery-3.1.1.min.js", "content.js"]
+      "js": ["jquery-3.1.1.min.js", "timer.js", "content.js"]
     }
   ]
 }

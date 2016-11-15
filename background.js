@@ -3,6 +3,8 @@
   const URL_PATTERN = "https://kanbanflow.com/*";
   const CANVAS_SIZE = 48;
 
+  let time;
+  let timer;
   let lastTime;
   let cancelTimer;
   let cancelTimeout = 10000;
@@ -68,6 +70,8 @@
     const eventMap = {
       pomodoroTick: onPomodoroTick,
       stopwatchTick: onStopwatchTick,
+      pomodoroStart: onPomodoroStart,
+      stopwatchStart: onStopwatchStart,
       cancel: onCancel
     };
 
@@ -114,8 +118,54 @@
     }
   }
 
+  function onPomodoroStart(request) {
+    time = request.total;
+
+    onPomodoroTick(request);
+    //timer = setInterval(() => {
+    //
+    //  time--;
+    //  onPomodoroTick({total: request.total, left: time});
+    //
+    //
+    //}, 1000);
+
+    timer = Timer({
+      delay: 1000,
+      onTick: () => {
+        time--;
+        onPomodoroTick({total: request.total, left: time});
+      }
+    });
+    timer.start();
+  }
+
+  function onStopwatchStart(request) {
+    time = 0;
+
+    onStopwatchTick({current: time});
+    //timer = setInterval(() => {
+    //  time++;
+    //  onStopwatchTick({current: time});
+    //
+    //}, 1000);
+    timer = Timer({
+      delay: 1000,
+      onTick: () => {
+        time++;
+        onStopwatchTick({current: time});
+      }
+    });
+    timer.start();
+  }
+
   function onCancel() {
     setDefaultIcon();
+    //clearInterval(timer);
+    //timer = null;
+
+    timer && timer.stop();
+    time = 0;
   }
 
 })();
