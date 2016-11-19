@@ -1,7 +1,5 @@
 (function () {
 
-  var initialTime;
-  var timerInterval;
   var timer;
 
   var totalTime, startTime;
@@ -53,31 +51,6 @@
     timer.start();
   }
 
-  //function onTimerStart(event) {
-  //  let timerData = getTimerData();
-  //  totalTime = getTotalTime(timerData);
-  //  startTime = getStartTime(timerData);
-  //
-  //  setTimeout(onTimerTick, 1);
-  //}
-  //
-  //function onTimerTick() {
-  //
-  //  if (!isStarted()) {
-  //    cancel();
-  //    return;
-  //  }
-  //
-  //  if (isNaN(totalTime)) {
-  //    synchroniseStopwatch(getCurrentTime());
-  //  }
-  //  else {
-  //    synchronisePomodoro(getLeftTime(), totalTime);
-  //  }
-  //
-  //  setTimeout(onTimerTick, 1000);
-  //}
-
   function getTimerPrefix() {
     let boardId = location.pathname.split('/board/')[1];
 
@@ -117,14 +90,6 @@
 
   function isStarted() {
     return !!localStorage[getTimerPrefix() + 'WorkTimerSession:WorkEntry'];
-  }
-
-  function synchronisePomodoro(left, total) {
-    chrome.extension.sendMessage({action: 'pomodoroTick', left, total}, () => {});
-  }
-
-  function synchroniseStopwatch(current) {
-    chrome.extension.sendMessage({action: 'stopwatchTick', current}, () => {});
   }
 
   function sendCancel() {

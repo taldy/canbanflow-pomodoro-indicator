@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
-  "name": "Kanbanflow pomodoro indicator",
-  "description": "",
+  "name": "Kanbanflow pomodoro timer indicator",
+  "description": "Provides extensions toolbar indicator for Kanbanflow pomodoro/stopwatch timer. Indicates amount of minutes left to work (or amount of seconds if left less than minute).",
   "version": "0.1",
   "background": {
     "scripts": [
@@ -10,8 +10,11 @@
     ],
     "persistent": true
   },
+  "icons": {
+    "64": "icons/icon64.png"
+  },
   "browser_action": {
-    "default_icon": "icons/icon64_grey.png"
+    "default_icon": "icons/icon64.png"
   },
   "permissions": [
     "activeTab",

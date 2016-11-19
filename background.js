@@ -9,6 +9,8 @@
   let cancelTimer;
   let cancelTimeout = 10000;
 
+  let defaultTitle;
+
   function activateKFTab() {
     chrome.tabs.query({url: URL_PATTERN}, tabs => {
       if (tabs[0]) {
@@ -57,11 +59,30 @@
 
   function setDefaultIcon() {
     chrome.browserAction.setIcon({
-      path: "icons/icon64_grey.png"
+      path: "icons/icon64.png"
     });
   }
 
+  function updateTitle(time) {
+
+    let title = defaultTitle || '';
+
+    if (time) {
+      let minutes = Math.floor(time / 60);
+      minutes = minutes < 10 ? '0' + minutes : minutes;
+      const seconds = time % 60;
+      title = minutes + ':' + seconds;
+    }
+
+    chrome.browserAction.setTitle({title});
+  }
+
+  function getDefaultTitle() {
+    chrome.browserAction.getTitle({}, title => { defaultTitle = title });
+  }
+
   chrome.browserAction.onClicked.addListener(activateKFTab);
+  getDefaultTitle();
 
   ///// Event handlers /////
 
@@ -87,6 +108,7 @@
 
     let absLeft = Math.abs(left);
     let uniqValue = absLeft > 60 ? Math.floor(absLeft / 10) : absLeft;
+    updateTitle(absLeft);
 
     if (uniqValue !== lastTime) {
       let alarm = left <= 60;
@@ -107,6 +129,7 @@
     let {current} = request;
 
     let value = current >= 60 ? Math.floor(current / 60) : current;
+    updateTitle(current);
 
     if (value !== lastTime) {
       let context = _getCanvasContext();
@@ -122,14 +145,6 @@
     time = request.total;
 
     onPomodoroTick(request);
-    //timer = setInterval(() => {
-    //
-    //  time--;
-    //  onPomodoroTick({total: request.total, left: time});
-    //
-    //
-    //}, 1000);
-
     timer = Timer({
       delay: 1000,
       onTick: () => {
@@ -144,11 +159,6 @@
     time = 0;
 
     onStopwatchTick({current: time});
-    //timer = setInterval(() => {
-    //  time++;
-    //  onStopwatchTick({current: time});
-    //
-    //}, 1000);
     timer = Timer({
       delay: 1000,
       onTick: () => {
@@ -160,12 +170,11 @@
   }
 
   function onCancel() {
-    setDefaultIcon();
-    //clearInterval(timer);
-    //timer = null;
-
     timer && timer.stop();
     time = 0;
+
+    setDefaultIcon();
+    updateTitle();
   }
 
 })();
